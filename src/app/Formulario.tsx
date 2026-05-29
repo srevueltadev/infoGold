@@ -1,7 +1,7 @@
 'use client'
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import api from "@/app/api";
-import {toast, ToastContainer} from "react-toastify";
+import { ToastContainer} from "react-toastify";
 
 function formatToMoney(value: number | string) {
     if (isNaN(Number(value)) || value === "") return value
@@ -132,6 +132,7 @@ export default function Formulario() {
         }
     }
 
+
     const init = useCallback(async () => {
         const nowData = data
         const [gold, banco, ext] = await Promise.all([
@@ -174,6 +175,7 @@ export default function Formulario() {
 
         saveIfChanged('data', nowData)
         calculos(nowData)
+        // @ts-ignore
     }, []);
 
     useEffect(() => {
@@ -294,53 +296,53 @@ export default function Formulario() {
 
     const captureRef = useRef<HTMLDivElement>(null);
 
-    const handleCapture = async () => {
-        if (captureRef.current) {
-            try {
-                const {default: html2canvas} = await import('html2canvas')
-                const canvas = await html2canvas(captureRef.current);
-                canvas.toBlob(async (blob) => {
-                    if (blob) {
-                        if (isMobile) {
-                            const file = new File([blob], "screenshot.png", {type: "image/png"}) as File;
-                            const shareData = {files: [file], title: "Precio", text: ""};
-                            if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-                                try {
-                                    await navigator.share(shareData);
-                                    toast.success("Imagen compartida exitosamente");
-                                } catch (error) {
-                                    if ((error as Error).name !== 'AbortError') {
-                                        toast.error("Error al compartir la imagen");
-                                    }
-                                }
-                            } else {
-                                toast.info("Descargando imagen...");
-                                const dataUrl = canvas.toDataURL("image/png");
-                                const link = document.createElement("a");
-                                link.href = dataUrl;
-                                link.download = "screenshot.png";
-                                link.click();
-                            }
-                        } else {
-                            try {
-                                const item = new ClipboardItem({"image/png": blob});
-                                await navigator.clipboard.write([item]);
-                                toast.success("Imagen copiada al portapapeles");
-                                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                            } catch (error) {
-                                toast.error("Error al copiar la imagen al portapapeles");
-                            }
-                        }
-                    }
-                }, "image/png");
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (error) {
-                toast.error("Error al capturar la pantalla");
-            }
-        }
-        setTimeScrenshot('')
-    };
-
+    // const handleCapture = async () => {
+    //     if (captureRef.current) {
+    //         try {
+    //             const {default: html2canvas} = await import('html2canvas')
+    //             const canvas = await html2canvas(captureRef.current);
+    //             canvas.toBlob(async (blob) => {
+    //                 if (blob) {
+    //                     if (isMobile) {
+    //                         const file = new File([blob], "screenshot.png", {type: "image/png"}) as File;
+    //                         const shareData = {files: [file], title: "Precio", text: ""};
+    //                         if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    //                             try {
+    //                                 await navigator.share(shareData);
+    //                                 toast.success("Imagen compartida exitosamente");
+    //                             } catch (error) {
+    //                                 if ((error as Error).name !== 'AbortError') {
+    //                                     toast.error("Error al compartir la imagen");
+    //                                 }
+    //                             }
+    //                         } else {
+    //                             toast.info("Descargando imagen...");
+    //                             const dataUrl = canvas.toDataURL("image/png");
+    //                             const link = document.createElement("a");
+    //                             link.href = dataUrl;
+    //                             link.download = "screenshot.png";
+    //                             link.click();
+    //                         }
+    //                     } else {
+    //                         try {
+    //                             const item = new ClipboardItem({"image/png": blob});
+    //                             await navigator.clipboard.write([item]);
+    //                             toast.success("Imagen copiada al portapapeles");
+    //                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //                         } catch (error) {
+    //                             toast.error("Error al copiar la imagen al portapapeles");
+    //                         }
+    //                     }
+    //                 }
+    //             }, "image/png");
+    //             // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    //         } catch (error) {
+    //             toast.error("Error al capturar la pantalla");
+    //         }
+    //     }
+    //     setTimeScrenshot('')
+    // };
+    //
 
     return (
         <>
