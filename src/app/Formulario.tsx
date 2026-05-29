@@ -1,15 +1,11 @@
 'use client'
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import api from "@/app/api";
-
 import {toast, ToastContainer} from "react-toastify";
 
 function formatToMoney(value: number | string) {
-    if (isNaN(Number(value)) || value === "") {
-        return value
-    }
-    const numValue = Number(value);
-    return numValue.toLocaleString('es-CO');
+    if (isNaN(Number(value)) || value === "") return value
+    return Number(value).toLocaleString('es-CO');
 }
 
 export interface FormType {
@@ -31,8 +27,6 @@ export interface DataType {
     dolar_time?: string;
     dolar_date: string;
 }
-
-//const bgBlue ={factorStyle:{backgroundColor: "#88a1c8",fontWeight: 'bold'}, goldStyle: {backgroundColor: "#88a1c8",fontWeight: 'bold'}}
 
 const defaultForm = [
     {A: "", B: 0, C: "89.5%"},
@@ -67,10 +61,14 @@ export default function Formulario() {
         dolar_time: dateNow,
         dolar_date: ""
     }
+    let extDataDefault = { xauCop: 0, goldUsdOz: 0, fecha: "" }
     if (typeof window !== "undefined") {
         defaultwindow = window.innerWidth <= 468
         if (localStorage.getItem('data')) {
             DataDefault = JSON.parse(localStorage.getItem('data') || JSON.stringify(DataDefault))
+        }
+        if (localStorage.getItem('extData')) {
+            extDataDefault = JSON.parse(localStorage.getItem('extData') || JSON.stringify(extDataDefault))
         }
     }
     const [image, setImage] = useState(null)
@@ -81,6 +79,7 @@ export default function Formulario() {
 
     const [fix] = useState(31.1034768)
     const [dataForm, setDataForm] = useState<FormType[]>(defaultForm);
+    const [extData, setExtData] = useState(extDataDefault)
     const defaultValue = "4333.00"
 
     const handleLogout = () => {
@@ -97,27 +96,16 @@ export default function Formulario() {
         metaViewport.name = 'viewport';
         metaViewport.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
         document.head.appendChild(metaViewport);
-
-        return () => {
-            document.head.removeChild(metaViewport);
-        };
+        return () => { document.head.removeChild(metaViewport); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         const originalTitle = document.title;
-
-        const handleBlur = () => {
-            document.title = "¡Vuelve pronto!";
-        };
-
-        const handleFocus = () => {
-            document.title = originalTitle;
-        };
-
+        const handleBlur = () => { document.title = "¡Vuelve pronto!"; };
+        const handleFocus = () => { document.title = originalTitle; };
         window.addEventListener('blur', handleBlur);
         window.addEventListener('focus', handleFocus);
-
         return () => {
             window.removeEventListener('blur', handleBlur);
             window.removeEventListener('focus', handleFocus);
@@ -126,7 +114,7 @@ export default function Formulario() {
     }, [data.dolar]);
 
     const abortRef = useRef<AbortController | null>(null)
-    const baseInterval = 15000
+    const baseInterval = 10000
     const maxInterval = 60000
     const intervalRef = useRef(baseInterval)
     const lastDataRef = useRef<DataType | null>(null)
@@ -146,37 +134,47 @@ export default function Formulario() {
 
     const init = useCallback(async () => {
         const nowData = data
-        let res = await api.netData()
-        nowData.gold = res.mid
-        nowData.gold_date = res.time
+        const [gold, banco, ext] = await Promise.all([
+            api.netData(),
+            api.bancodebogota(),
+            api.goldExternal(),
+        ])
+
+        nowData.gold = gold.mid
+        nowData.gold_date = gold.time
         nowData.gold_time = new Date().toLocaleTimeString()
 
-        res = await api.bancodebogota()
         nowData.dolar_time = new Date().toLocaleTimeString()
-        nowData.dolar_date = res.time
-        if (res.image) {
+        nowData.dolar_date = banco.time
+        if (banco.image) {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
-            setImage(res?.image.replace('..', ''))
-        }else{
+            setImage(banco.image.replace('..', ''))
+        } else {
             setImage(null)
         }
-        if (res.mid === 0) {
+        if (banco.mid === 0) {
             if (typeof window !== "undefined") {
                 nowData.dolar = Number(localStorage.getItem('dolar') || defaultValue)
             }
             setIsError(true)
         } else {
-            nowData.dolar = res.mid
+            nowData.dolar = banco.mid
             setIsError(false)
             if (typeof window !== "undefined") {
-                localStorage.setItem('dolar', String(res.mid))
+                localStorage.setItem('dolar', String(banco.mid))
             }
         }
+
+        if (ext.xauCop > 0 || ext.goldUsdOz > 0) {
+            const next = { xauCop: ext.xauCop, goldUsdOz: ext.goldUsdOz, fecha: ext.fecha }
+            setExtData(next)
+            saveIfChanged('extData', next)
+        }
+
         saveIfChanged('data', nowData)
         calculos(nowData)
     }, []);
-
 
     useEffect(() => {
         let handle: number | undefined
@@ -184,17 +182,17 @@ export default function Formulario() {
 
         const loop = async () => {
             if (document.visibilityState !== 'visible') return
-            // cancel previous
             abortRef.current?.abort()
             const ctrl = new AbortController()
             abortRef.current = ctrl
             try {
                 const before = JSON.stringify(lastDataRef.current)
-                // pass signal to api
-                const gold = await api.netData(ctrl.signal)
-                const banco = await api.bancodebogota(ctrl.signal)
+                const [gold, banco, ext] = await Promise.all([
+                    api.netData(ctrl.signal),
+                    api.bancodebogota(ctrl.signal),
+                    api.goldExternal(ctrl.signal),
+                ])
 
-                // Build nowData based on previous state to avoid stale
                 const nowData = {
                     ...data,
                     gold: gold.mid || data.gold,
@@ -205,15 +203,20 @@ export default function Formulario() {
                     dolar_time: new Date().toLocaleTimeString(),
                 } as DataType
 
-                if (banco.image){
+                if (banco.image) {
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-expect-error
                     setImage(banco?.image.replace('..', ''))
-                }else {
+                } else {
                     setImage(null)
                 }
 
-                // recompute prom based on dolar result present or previous
+                if (ext.xauCop > 0 || ext.goldUsdOz > 0) {
+                    const next = { xauCop: ext.xauCop, goldUsdOz: ext.goldUsdOz, fecha: ext.fecha }
+                    setExtData(next)
+                    saveIfChanged('extData', next)
+                }
+
                 const after = JSON.stringify(nowData)
                 const changed = before !== after
                 if (changed) {
@@ -228,7 +231,6 @@ export default function Formulario() {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
                 if (e?.name !== 'AbortError') {
-                    // backoff on errors
                     intervalRef.current = Math.min(maxInterval, intervalRef.current * 2)
                 }
             } finally {
@@ -250,7 +252,6 @@ export default function Formulario() {
         }
 
         document.addEventListener('visibilitychange', onVisibility)
-        // first run
         loop().then()
         return () => {
             stopped = true
@@ -261,25 +262,18 @@ export default function Formulario() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Countdown timer effect
     useEffect(() => {
         const countdownInterval = setInterval(() => {
             const remaining = Math.max(0, nextExecutionRef.current - Date.now())
             setCountdown(Math.ceil(remaining / 1000))
         }, 1000)
-
         return () => clearInterval(countdownInterval)
     }, [])
 
     const calculos = (nowData: DataType) => {
         setData({...nowData})
-
-        // clone dataForm to avoid in-place mutation
         const newDataForm = dataForm.map((row) => ({...row}))
-        //porcentajes
-
-        const multi = ((Number(nowData.gold) *  Number(nowData.dolar)) / fix)  * 1000
-
+        const multi = ((Number(nowData.gold) * Number(nowData.dolar)) / fix) * 1000
         for (let i = 0; i <= newDataForm.length - 1; i++) {
             const porcentaje = Number(String(newDataForm[i].C).replace('%', ''))
             newDataForm[i].B = String(Math.floor(multi * porcentaje / 100))
@@ -293,9 +287,7 @@ export default function Formulario() {
     }
 
     useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth <= 468);
-        };
+        const handleResize = () => { setIsMobile(window.innerWidth <= 468); };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
@@ -311,20 +303,17 @@ export default function Formulario() {
                     if (blob) {
                         if (isMobile) {
                             const file = new File([blob], "screenshot.png", {type: "image/png"}) as File;
-                            const shareData = { files: [file], title: "Precio", text: "" };
-                            // Verificar si el navegador soporta compartir archivos
+                            const shareData = {files: [file], title: "Precio", text: ""};
                             if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
                                 try {
                                     await navigator.share(shareData);
                                     toast.success("Imagen compartida exitosamente");
                                 } catch (error) {
-                                    // El usuario canceló o hubo un error
                                     if ((error as Error).name !== 'AbortError') {
                                         toast.error("Error al compartir la imagen");
                                     }
                                 }
                             } else {
-                                // Fallback: descargar la imagen
                                 toast.info("Descargando imagen...");
                                 const dataUrl = canvas.toDataURL("image/png");
                                 const link = document.createElement("a");
@@ -350,38 +339,52 @@ export default function Formulario() {
             }
         }
         setTimeScrenshot('')
-
     };
+
 
     return (
         <>
-            <ToastContainer/>
-            <main className={'card'}>
-                {/* Header with countdown and logout */}
-                <div className="header-bar">
-                    <div className="countdown-timer">
-                        Próxima actualización en: <strong>{countdown}s</strong>
-                    </div>
-                    <button className="logout-button" onClick={handleLogout}>
-                        Salir
-                    </button>
-                </div>
-                {/* Info Cards Section */}
-                <div className="info-cards-container">
+            <ToastContainer theme="dark"/>
+            <div className="dashboard-layout">
 
-                    {/* Dolar Card */}
-                    <div className="info-card dolar">
-                        <div className="info-card-left">
-                            <span className="info-card-label">
-                                {isError ? "Ingrese dolar ⬇" : "Banco de Bogotá"}
+                {/* ── Header ── */}
+                <header className="dashboard-header">
+                    <div className="header-brand">
+
+                    </div>
+                    <div className="header-right">
+                        <div className="status-indicator">
+                            <span className="status-dot-wrapper">
+                                <span className="status-dot-ping"/>
+                                <span className="status-dot-solid"/>
                             </span>
+                            <span>{/*Actualización:*/} <strong>{countdown}s</strong></span>
+                        </div>
+                        <button className="btn-logout" onClick={handleLogout}>SALIR</button>
+                    </div>
+                </header>
+
+                <div className="dashboard-main">
+
+                    {/* ── Primary 4 cards ── */}
+                    <section className="primary-grid">
+
+                        {/* Card 1: Banco de Bogotá */}
+                        <div className="primary-card">
+                            <div className="primary-card-header">
+                                <span className="card-label">Banco de Bogotá</span>
+                                <span className={`card-badge ${isError ? 'badge-error' : 'badge-live'}`}>
+                                    {isError ? 'ERROR' : 'LIVE'}
+                                </span>
+                            </div>
                             {isError ? (
                                 <input
                                     type="number"
                                     name="bancodebogota"
                                     placeholder="4333"
                                     autoComplete="off"
-                                    value={data.dolar}
+                                    value={data.dolar || ''}
+                                    className="primary-input"
                                     onChange={(e) => {
                                         const nowData = {...data}
                                         nowData.dolar = Number(e.target.value || 0)
@@ -393,137 +396,125 @@ export default function Formulario() {
                                     }}
                                 />
                             ) : (
-                                <span className="info-card-value"
-                                      style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                                    {image && (<img src={`https://pbit.bancodebogota.com${image}`} alt="indicador"
-                                                    style={{width: 10, height: 10}}/>)}
-                                    {formatToMoney(data.dolar)}</span>
+                                <div className="primary-value-row">
+                                    <span className="primary-value">{formatToMoney(data.dolar)}</span>
+                                    <span className="primary-unit">COP</span>
+                                </div>
                             )}
+                            <p className="primary-meta">
+                                {image && (
+                                    <img src={`https://pbit.bancodebogota.com${image}`} alt="indicador"/>
+                                )}
+                                {data.dolar_time}{data.dolar_date ? ` · ${data.dolar_date}` : ''}
+                            </p>
                         </div>
-                        <div className="info-card-right">
-                            <span className="info-card-time">{data.dolar_time}</span>
-                            <span className="info-card-extra">
-                                {`Banco de bogota: ${data.dolar_date}`}
-                            </span>
+
+                        {/* Card 2: Net Dania */}
+                        <div className="primary-card">
+                            <div className="primary-card-header">
+                                <span className="card-label">Net Dania</span>
+                                <span className="card-badge badge-global">USD/OZ</span>
+                            </div>
+                            <div className="primary-value-row">
+                                <span className="primary-value">{data.gold || extData.goldUsdOz || '—'}</span>
+                                <span className="primary-unit">USD/OZ</span>
+                            </div>
+                            <p className="primary-meta">
+                                {data.gold_time}{data.gold_date ? ` · ${data.gold_date}` : ''}
+                            </p>
                         </div>
-                    </div>
-                    {/* Gold Price Card */}
-                    <div className="info-card gold">
-                        <div className="info-card-left">
-                            <span className="info-card-label">Gold Price</span>
-                            <span className="info-card-value">{data.gold}</span>
+
+                        {/* Card 3: Gold Price COP/OZ */}
+                        <div className="primary-card">
+                            <div className="primary-card-header">
+                                <span className="card-label">Gold Price</span>
+                                <span className="card-badge badge-calc">COP/OZ</span>
+                            </div>
+                            <div className="primary-value-row">
+                                <span className="primary-value">
+                                    {extData.xauCop > 0 ? formatToMoney(extData.xauCop) : '—'}
+                                </span>
+                            </div>
+                            <p className="primary-meta">{extData.fecha || ''}</p>
                         </div>
-                        <div className="info-card-right">
-                            <span className="info-card-time">{String(data.gold_time)}</span>
-                            <span className="info-card-extra">
-                              {data.gold_date}
-                            </span>
 
+                        {/* Card 4: Gold Price USD/OZ */}
+                        <div className="primary-card">
+                            <div className="primary-card-header">
+                                <span className="card-label">Gold Price</span>
+                                <span className="card-badge badge-global">USD/OZ</span>
+                            </div>
+                            <div className="primary-value-row">
+                                <span className="primary-value">
+                                    {extData.goldUsdOz > 0 ? extData.goldUsdOz : '—'}
+                                </span>
+                            </div>
+                            <p className="primary-meta">{extData.fecha || ''}</p>
                         </div>
-                    </div>
 
+                    </section>
 
-                </div>
-
-                {/* iframe */}
-                {/*<div className="iframe-container">*/}
-                {/*    <iframe*/}
-                {/*        id="myiframe"*/}
-                {/*        style={{overflow: 'hidden', pointerEvents: 'none', width: '100%', border: 'none'}}*/}
-                {/*        scrolling="no"*/}
-                {/*        rel="preconnect"*/}
-                {/*        src="https://pbit.bancodebogota.com/Indicadores/Tirilla.aspx"*/}
-                {/*        height={50}*/}
-                {/*    />*/}
-                {/*</div>*/}
-
-                {/* Screenshot Container */}
-                <div ref={captureRef} className="screenshot-container">
-                    {timeScrenshot !== "" && (
-                        <div className="screenshot-time">
-                            📅 {timeScrenshot}
-                        </div>
-                    )}
-
-                    {/* Main Price Cards */}
-                    {/*<div className="price-grid">*/}
-                    {/*    /!* ONZA *!/*/}
-                    {/*    <div className="price-item highlight">*/}
-                    {/*        <div className="price-item-left">*/}
-                    {/*            <span className="price-label">Índice 1</span>*/}
-                    {/*            <span className="price-name">ONZA</span>*/}
-                    {/*        </div>*/}
-                    {/*        <div>*/}
-                    {/*            <span className="price-value">{formatToMoney(dataForm[0]?.B || 0)}</span>*/}
-                    {/*            <div style={{fontSize: '0.75rem', color: '#888'}}>{formatToMoney(dataForm[0]?.C || 0)}</div>*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-
-                    {/*    /!* Fix value *!/*/}
-                    {/*    <div className="price-item">*/}
-                    {/*        <div className="price-item-left">*/}
-                    {/*            <span className="price-label">Índice 1</span>*/}
-                    {/*            <span className="price-name">Factor Fix</span>*/}
-                    {/*        </div>*/}
-                    {/*        <span className="price-value">{dataForm[4]?.A || fix}</span>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
-
-                    {/* Percentage Section */}
-                    <div className="percentage-section">
-                        <h3 className="percentage-title">📊 Porcentajes</h3>
-                        <div className="percentage-grid">
+                    {/* ── Indicator grid (screenshot area) ── */}
+                    <div ref={captureRef} className="screenshot-area">
+                        {timeScrenshot !== "" && (
+                            <div className="screenshot-timestamp">📅 {timeScrenshot}</div>
+                        )}
+                        <p className="indicator-section-title">Tabla de Porcentajes</p>
+                        <div className="indicator-grid">
                             {dataForm.map((row, index) => (
-                                <div
-                                    key={index}
-                                    className={`percentage-card`}
-                                >
-                                    <div className="percentage-label">
+                                <div key={index} className="indicator-card">
+                                    <div className="indicator-left">
                                         {row.factorEditable ? (
                                             <input
                                                 type="number"
                                                 value={row.C}
                                                 autoComplete="off"
-                                                placeholder="0.0%"
+                                                placeholder="0.0"
+                                                className="indicator-input"
                                                 onChange={(e) => {
                                                     dataForm[index].C = e.target.value
                                                     setDataForm([...dataForm])
                                                     calculos(data)
                                                 }}
-                                                style={{
-                                                    width: '70px',
-                                                    textAlign: 'center',
-                                                    border: '1px solid #ddd',
-                                                    borderRadius: '4px',
-                                                    padding: '4px',
-                                                    fontSize: '0.9rem'
-                                                }}
                                             />
                                         ) : (
-                                            row.C
+                                            <p className="indicator-percent">{row.C}</p>
                                         )}
                                     </div>
-                                    <div className="percentage-amount-b">{formatToMoney(Math.floor(Number(row.B) / 1000))}</div>
+                                    <div className="indicator-right">
+                                        {/*<p className="indicator-sublabel">COP / GRAMO</p>*/}
+                                        <p className="indicator-value">
+                                            {formatToMoney(Math.floor(Number(row.B) / 1000))}
+                                        </p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
+
+                    {/* ── Action button ── */}
+                    {/*<div className="action-section">*/}
+                    {/*    <button*/}
+                    {/*        className="btn-report"*/}
+                    {/*        onClick={() => {*/}
+                    {/*            setTimeScrenshot(`${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()}`)*/}
+                    {/*            setTimeout(() => { handleCapture().then() }, 500)*/}
+                    {/*        }}*/}
+                    {/*    >*/}
+                    {/*        <svg className="btn-report-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
+                    {/*            <path*/}
+                    {/*                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"*/}
+                    {/*                strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}/>*/}
+                    {/*        </svg>*/}
+                    {/*        {isMobile ? 'COMPARTIR REPORTE' : 'COPIAR REPORTE'}*/}
+                    {/*    </button>*/}
+                    {/*</div>*/}
                 </div>
 
-                {/* Action Button */}
-                <div className="action-button">
-                    <button onClick={() => {
-                        setTimeScrenshot(`${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString()} `)
-                        setTimeout(() => {
-                            handleCapture().then()
-                        }, 500)
-                    }}>
-                        {isMobile ? "📤 Compartir tabla" : "📋 Copiar pantallazo al portapapeles"}
-                    </button>
-                </div>
-
-                <div className="version-tag">v1.1</div>
-            </main>
+                <footer className="dashboard-footer">
+                    InfoGold Systems · Enterprise Edition · v1.1
+                </footer>
+            </div>
         </>
     );
 }

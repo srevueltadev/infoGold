@@ -2,6 +2,10 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { chromium } from 'playwright';
 import { withAuth } from './middleware';
 
+const INFOGOLD_URL = 'https://info-gold.fly.dev/api/getNetData';
+const INFOGOLD_TOKEN = process.env.INFOGOLD_TOKEN ||
+    'Bearer aW5mb0dvbGQ6MTc4MDA5NzM1NTQ0MzoyYTRmMGMzMzlhMzE4MmM1NWE1ZjJlZGMwODBmZGM4MWMyOTBhNDkwNzRiYzBkYzMyNjYwN2Q2NTJiNmRmMmQ5';
+
 let cache: { value: string | null; fecha: string | null; ts: number } | null = null;
 const TTL = 60_000;
 
@@ -15,24 +19,40 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             return res.status(200).json({ value: cache.value, fecha: cache.fecha });
         }
 
-        const browser = await chromium.launch({ headless: true });
-        const page = await browser.newPage();
-        
-        // Navegar a la URL proporcionada
-        await page.goto('https://m.netdania.com/commodities/gold', { 
-            waitUntil: 'domcontentloaded', 
-            timeout: 30000 
-        });
+        let value: string | null = null;
+        let fecha: string | null = null;
 
-        // Esperar a que los elementos estén presentes si es necesario, 
-        // aunque domcontentloaded suele ser suficiente para selectores estáticos simples.
-        // Dado que NetDania suele ser dinámico, añadimos una pequeña espera o esperamos el selector.
-        await page.waitForSelector('#recid-1-f6', { timeout: 10000 }).catch(() => null);
+        // 1. External info-gold API (primary — no Playwright needed)
+        try {
+            const extRes = await fetch(INFOGOLD_URL, {
+                headers: { 'Authorization': INFOGOLD_TOKEN }
+            });
+            if (extRes.ok) {
+                const extData = await extRes.json();
+                value = extData.value ?? null;
+                fecha = extData.fecha ?? null;
+            }
+        } catch {
+            // External failed — fall back to Playwright
+        }
 
-        const value = await page.$eval('#recid-1-f6', (el) => el.textContent?.trim() || null).catch(() => null);
-        const fecha = await page.$eval('#recid-1-f17', (el) => el.textContent?.trim() || null).catch(() => null);
-
-        await browser.close();
+        // 2. Playwright on m.netdania.com (fallback)
+        if (!value) {
+            try {
+                const browser = await chromium.launch({ headless: true });
+                const page = await browser.newPage();
+                await page.goto('https://m.netdania.com/commodities/gold', {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 30000
+                });
+                await page.waitForSelector('#recid-1-f6', { timeout: 10000 }).catch(() => null);
+                value = await page.$eval('#recid-1-f6', (el) => el.textContent?.trim() || null).catch(() => null);
+                fecha = await page.$eval('#recid-1-f17', (el) => el.textContent?.trim() || null).catch(() => null);
+                await browser.close();
+            } catch {
+                // Playwright also failed
+            }
+        }
 
         cache = { value, fecha, ts: Date.now() };
         res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');

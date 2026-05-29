@@ -68,6 +68,23 @@ const api = {
             console.error(e);
             return result;
         }
+    },
+    goldExternal: async (signal?: AbortSignal) => {
+        const result = { xauCop: 0, goldUsdOz: 0, fecha: "" };
+        try {
+            const response = await fetch('/api/getGoldExternal', {
+                signal,
+                headers: getAuthHeaders()
+            });
+            const data = await response.json();
+            result.xauCop = data.xauCop ? Number(data.xauCop) : 0;
+            result.goldUsdOz = data.goldUsdOz ? Number(data.goldUsdOz) : 0;
+            result.fecha = data.fecha || "";
+            return result;
+        } catch (e) {
+            console.error(e);
+            return result;
+        }
     }
 }
 

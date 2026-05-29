@@ -1,0 +1,228 @@
+<!DOCTYPE html><html lang="en" style="width: 1280px; height: 1081px; overflow: hidden; position: relative;"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Exchange Monitor - Slate Financial</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter for professional typography -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style data-purpose="global-typography">body { font-family: 'Inter', sans-serif; background-color: #0b1326; }</style>
+<style data-purpose="dashboard-layout">
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .status-badge {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen bg-[#0b1326]">
+<!-- BEGIN: MainHeader -->
+<header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-lg sticky top-0 z-50">
+<div class="flex items-center space-x-4">
+
+
+</div>
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-2" data-purpose="status-indicator">
+<span class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+</span>
+<span class="text-sm font-mono status-badge text-slate-300">Updated: 1m ago</span>
+</div>
+<button class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-4 rounded transition-colors uppercase tracking-wide" id="btn-logout">
+        SALIR
+      </button>
+</div>
+</header>
+<!-- END: MainHeader -->
+<main class="dashboard-container p-6">
+<!-- BEGIN: PrimaryDataCards -->
+<section class="grid grid-cols-1 gap-6 mb-8 md:grid-cols-4">
+<!-- Banco de Bogotá Card -->
+<div class="bg-[#131b2e] p-6 rounded-xl border border-slate-700 shadow-sm hover:shadow-md transition-shadow" data-purpose="primary-card">
+<div class="flex justify-between items-start mb-4">
+<h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Banco de Bogotá</h2>
+<span class="text-emerald-600 bg-emerald-50 text-[10px] px-2 py-1 rounded-full font-bold">LIVE</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-bold text-white">4,120.50</span>
+<span class="text-slate-400 text-sm font-medium">COP</span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Market Spread: 0.02%</p>
+</div>
+<!-- Net Dania Card -->
+<div class="bg-[#131b2e] p-6 rounded-xl border border-slate-700 shadow-sm hover:shadow-md transition-shadow" data-purpose="primary-card">
+<div class="flex justify-between items-start mb-4">
+<h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Net Dania</h2>
+<span class="text-blue-600 bg-blue-50 text-[10px] px-2 py-1 rounded-full font-bold">GLOBAL</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-bold text-white">1.0842</span>
+<span class="text-slate-400 text-sm font-medium">EUR/USD</span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Volatility Index: Medium</p>
+</div>
+<!-- Indicator A -->
+<div class="bg-[#131b2e] p-6 rounded-xl border border-slate-700 shadow-sm hover:shadow-md transition-shadow" data-purpose="primary-card">
+<div class="flex justify-between items-start mb-4">
+<h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider">NEW INDICATOR A</h2>
+<span class="text-slate-400 bg-slate-800 text-[10px] px-2 py-1 rounded-full font-bold">N/A</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-bold text-white">0.0000</span>
+<span class="text-slate-400 text-sm font-medium">USD</span>
+</div>
+<p class="text-xs text-slate-500 mt-2">Status: Pending</p>
+</div>
+<!-- Indicator B -->
+<div class="bg-[#131b2e] p-6 rounded-xl border border-slate-700 shadow-sm hover:shadow-md transition-shadow" data-purpose="primary-card">
+<div class="flex justify-between items-start mb-4">
+<h2 class="text-slate-400 text-sm font-semibold uppercase tracking-wider">NEW INDICATOR B</h2>
+<span class="text-slate-400 bg-slate-800 text-[10px] px-2 py-1 rounded-full font-bold">N/A</span>
+</div>
+<div class="flex items-baseline space-x-2">
+<span class="text-4xl font-bold text-white">0.0000</span>
+<span class="text-slate-400 text-sm font-medium">USD</span>
+</div>
+<p class="text-xs text-slate-500 mt-2">Status: Pending</p>
+</div>
+</section>
+<!-- END: PrimaryDataCards -->
+<!-- BEGIN: IndicatorGrid - Updated to 18 indicators (3x6 for visual balance) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Card 1 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Index Alpha</p><p class="text-lg font-bold text-white">89.5%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+1.2%</p></div>
+</div>
+<!-- Card 2 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Index Beta</p><p class="text-lg font-bold text-white">90.0%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-slate-500">Stable</p></div>
+</div>
+<!-- Card 3 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Spread Delta</p><p class="text-lg font-bold text-white">91.2%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-rose-600">-0.4%</p></div>
+</div>
+<!-- Card 4 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Flow Gamma</p><p class="text-lg font-bold text-white">88.7%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+0.8%</p></div>
+</div>
+<!-- Card 5 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Ratio Kappa</p><p class="text-lg font-bold text-white">92.4%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+2.1%</p></div>
+</div>
+<!-- Card 6 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Volume Rho</p><p class="text-lg font-bold text-white">87.3%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-rose-600">-1.5%</p></div>
+</div>
+<!-- Card 7 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Margin Zeta</p><p class="text-lg font-bold text-white">90.5%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-slate-500">Stable</p></div>
+</div>
+<!-- Card 8 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Yield Sigma</p><p class="text-lg font-bold text-white">93.1%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+0.5%</p></div>
+</div>
+<!-- Card 9 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Equity Omega</p><p class="text-lg font-bold text-white">86.2%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-rose-600">-0.2%</p></div>
+</div>
+<!-- Card 10 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Asset Theta</p><p class="text-lg font-bold text-white">94.8%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+1.4%</p></div>
+</div>
+<!-- Card 11 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Metric Epsilon</p><p class="text-lg font-bold text-white">88.9%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-slate-500">Stable</p></div>
+</div>
+<!-- Card 12 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Price Lambda</p><p class="text-lg font-bold text-white">91.7%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+0.9%</p></div>
+</div>
+<!-- Card 13 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Flux Nu</p><p class="text-lg font-bold text-white">85.4%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-rose-600">-0.7%</p></div>
+</div>
+<!-- Card 14 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Reserve Iota</p><p class="text-lg font-bold text-white">95.2%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+2.4%</p></div>
+</div>
+<!-- Card 15 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Risk Omicron</p><p class="text-lg font-bold text-white">89.1%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-slate-500">Stable</p></div>
+</div>
+<!-- Card 16 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Market Psi</p><p class="text-lg font-bold text-white">92.6%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+1.1%</p></div>
+</div>
+<!-- Card 17 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Base Chi</p><p class="text-lg font-bold text-white">87.9%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-emerald-600">+0.3%</p></div>
+</div>
+<!-- Card 18 -->
+<div class="bg-[#131b2e] rounded-lg border border-slate-800 p-4 flex justify-between items-center">
+<div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Core Phi</p><p class="text-lg font-bold text-white">90.2%</p></div>
+<div class="text-right"><p class="text-[10px] text-slate-400">Current Value</p><p class="text-sm font-mono font-medium text-rose-600">-0.1%</p></div>
+</div>
+</section>
+<!-- END: IndicatorGrid -->
+<!-- BEGIN: ActionSection -->
+<div class="mt-12 flex justify-center pb-12">
+<button class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 px-10 rounded-lg shadow-xl transition-all active:scale-95 group">
+<svg class="h-5 w-5 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<span class="tracking-widest text-sm">COPIAR REPORTE</span>
+</button>
+</div>
+<!-- END: ActionSection -->
+</main>
+<!-- BEGIN: Footer -->
+<footer class="border-t border-slate-800 py-6 px-6 text-center text-slate-500 text-[10px] uppercase tracking-[0.2em]">
+    Slate Financial Systems © 2023 - Real-Time Exchange Data Feed
+  </footer>
+<!-- END: Footer -->
+<script data-purpose="simulated-updates">
+    // Script to simulate a ticking clock or status update as suggested in the prompt "7s"
+    let seconds = 7;
+    const badge = document.querySelector('.status-badge');
+
+    setInterval(() => {
+      seconds++;
+      if (seconds > 60) {
+        badge.textContent = `Updated: 1m ago`;
+      } else {
+        badge.textContent = `Updated: ${seconds}s ago`;
+      }
+    }, 1000);
+
+    // Simple log for buttons
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      console.log('User logging out...');
+      alert('Logging out of Exchange Monitor...');
+    });
+  </script>
+
+
+<div id="snapdom-sandbox" data-snapdom-sandbox="true" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div></body></html>

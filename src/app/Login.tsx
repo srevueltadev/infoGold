@@ -19,9 +19,7 @@ export default function Login({ onLoginSuccessAction }: LoginProps) {
         try {
             const response = await fetch('/api/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
             });
 
@@ -45,8 +43,7 @@ export default function Login({ onLoginSuccessAction }: LoginProps) {
         <div className="login-container">
             <div className="login-card">
                 <div className="login-header">
-                    <h1>🪙 InfoGold</h1>
-                    <p>Ingrese sus credenciales</p>
+                    <p>Ingrese sus credenciales para continuar</p>
                 </div>
                 <form onSubmit={handleSubmit} className="login-form">
                     <div className="form-group">
@@ -68,18 +65,17 @@ export default function Login({ onLoginSuccessAction }: LoginProps) {
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Contraseña"
+                            placeholder="••••••••"
                             required
                             autoComplete="current-password"
                         />
                     </div>
                     {error && <div className="login-error">{error}</div>}
                     <button type="submit" disabled={loading} className="login-button">
-                        {loading ? 'Cargando...' : 'Iniciar Sesión'}
+                        {loading ? 'Verificando...' : 'Acceder al Sistema'}
                     </button>
                 </form>
             </div>
         </div>
     );
 }
-
