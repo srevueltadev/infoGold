@@ -21,6 +21,7 @@ export default function Login({ onLoginSuccessAction }: LoginProps) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),
+                signal: AbortSignal.timeout(10000),
             });
 
             const data = await response.json();
@@ -32,8 +33,9 @@ export default function Login({ onLoginSuccessAction }: LoginProps) {
             } else {
                 setError(data.error || 'Error al iniciar sesión');
             }
-        } catch {
-            setError('Error de conexión');
+        } catch (e) {
+            const isTimeout = e instanceof DOMException && e.name === 'TimeoutError';
+            setError(isTimeout ? 'El servidor no responde, intenta de nuevo' : 'Error de conexión');
         } finally {
             setLoading(false);
         }

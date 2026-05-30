@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { chromium } from 'playwright';
+import { withPage } from '@/lib/playwright';
+import { fetchWithExternalAuth } from '@/lib/externalAuth';
 import { withAuth } from './middleware';
-
-const EXTERNAL_TOKEN = process.env.GOLDSILVER_TOKEN ||
-    'Bearer Z29sZGVuR3JvdXA6MTc4MDA4Mjg5NTczNjo0ZWM0ZjgyMWM4NTY4NjhjYjBhNGQxODI0MGQ4MWY3MTA1YjljMjlkOTdhNGZjYWI5MDExYzQ1YWEzOTI5YTAw';
 
 let cache: { usd: string[]; image: string | null; fecha: string | null; ts: number } | null = null
 const TTL = 60_000
@@ -24,34 +22,37 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
         // Try Banco de Bogotá via Playwright
         try {
-            const browser = await chromium.launch({ headless: true });
-            const page = await browser.newPage();
-            await page.goto('https://pbit.bancodebogota.com/Indicadores/Tirilla.aspx', {
-                waitUntil: 'domcontentloaded',
-                timeout: 15000
-            });
+            const result = await withPage(async (page) => {
+                await page.goto('https://pbit.bancodebogota.com/Indicadores/Tirilla.aspx', {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 15000
+                });
 
-            let selector = '#ctl00_MarPrinc > span:nth-child(3)';
-            usd = await page.$$eval(selector, (elements) =>
-                elements.map((e) => e.textContent?.trim() || '')
-            );
-
-            if (usd.length === 0) {
-                selector = '#ctl00_MarPrinc > span:nth-child(2)';
-                usd = await page.$$eval(selector, (elements) =>
+                let selector = '#ctl00_MarPrinc > span:nth-child(3)';
+                let pUsd = await page.$$eval(selector, (elements) =>
                     elements.map((e) => e.textContent?.trim() || '')
                 );
-            }
 
-            image = await page.$eval(`${selector} img`, (img) =>
-                img.getAttribute('src') || null
-            ).catch(() => null);
+                if (pUsd.length === 0) {
+                    selector = '#ctl00_MarPrinc > span:nth-child(2)';
+                    pUsd = await page.$$eval(selector, (elements) =>
+                        elements.map((e) => e.textContent?.trim() || '')
+                    );
+                }
 
-            fecha = await page.$eval('#ctl00_MarPrinc > span:nth-child(1)', (el) =>
-                el.textContent?.trim() || null
-            ).catch(() => null);
+                const pImage = await page.$eval(`${selector} img`, (img) =>
+                    img.getAttribute('src') || null
+                ).catch(() => null);
 
-            await browser.close();
+                const pFecha = await page.$eval('#ctl00_MarPrinc > span:nth-child(1)', (el) =>
+                    el.textContent?.trim() || null
+                ).catch(() => null);
+
+                return { pUsd, pImage, pFecha };
+            });
+            usd = result.pUsd;
+            image = result.pImage;
+            fecha = result.pFecha;
         } catch {
             // Playwright failed — will use external fallback
         }
@@ -59,9 +60,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // Fallback: external goldsilver API
         if (usd.length === 0) {
             try {
-                const extRes = await fetch('https://goldsilver.fly.dev/api/getUsd', {
-                    headers: { 'Authorization': EXTERNAL_TOKEN }
-                });
+                const extRes = await fetchWithExternalAuth('https://goldsilver.fly.dev/api/getUsd');
                 if (extRes.ok) {
                     const extData = await extRes.json();
                     if (extData.usd?.length) {

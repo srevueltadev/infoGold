@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { chromium } from 'playwright';
+import { withPage } from '@/lib/playwright';
 import { withAuth } from './middleware';
 
 let cache: { price: string | null; date: string | null; ts: number } | null = null;
@@ -15,39 +15,34 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             return res.status(200).json({ price: cache.price, date: cache.date });
         }
 
-        const browser = await chromium.launch({ headless: true });
-        const page = await browser.newPage();
+        const { price, date } = await withPage(async (page) => {
+            await page.goto('https://goldprice.org/', {
+                waitUntil: 'domcontentloaded',
+                timeout: 15000
+            });
 
-        await page.goto('https://goldprice.org/', {
-            waitUntil: 'domcontentloaded',
-            timeout: 15000
+            await page.evaluate(() => {
+                localStorage.setItem('gold_ticker_default', JSON.stringify({
+                    currency_ticker: 'COP',
+                    weight_ticker: 'k'
+                }));
+            });
+
+            await page.waitForSelector('#priceofgold', { timeout: 10000 }).catch(() => null);
+            await page.waitForTimeout(2000);
+
+            const p = await page.$eval(
+                '#priceofgold > div > div > table > tbody > tr:nth-child(1) > td:nth-child(2)',
+                (el) => el.textContent?.trim() || null
+            ).catch(() => null);
+
+            const d = await page.$eval(
+                '#gpxTickTab_date',
+                (el) => el.textContent?.trim() || null
+            ).catch(() => null);
+
+            return { price: p, date: d };
         });
-
-        // Set gold ticker default in browser localStorage
-        await page.evaluate(() => {
-            localStorage.setItem('gold_ticker_default', JSON.stringify({
-                currency_ticker: 'COP',
-                weight_ticker: 'k'
-            }));
-        });
-
-        // Esperar a que cargue el contenido dinámico
-        await page.waitForSelector('#priceofgold', { timeout: 10000 }).catch(() => null);
-        await page.waitForTimeout(2000); // Esperar un poco para datos dinámicos
-
-        // Extraer precio del oro: #priceofgold > div > div > table > tbody > tr:nth-child(1) > td:nth-child(2)
-        const price = await page.$eval(
-            '#priceofgold > div > div > table > tbody > tr:nth-child(1) > td:nth-child(2)',
-            (el) => el.textContent?.trim() || null
-        ).catch(() => null);
-
-        // Extraer fecha: #gpxTickTab_date
-        const date = await page.$eval(
-            '#gpxTickTab_date',
-            (el) => el.textContent?.trim() || null
-        ).catch(() => null);
-
-        await browser.close();
 
         cache = { price, date, ts: Date.now() };
         res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=300');
