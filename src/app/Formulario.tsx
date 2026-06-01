@@ -116,7 +116,7 @@ export default function Formulario() {
 
     const abortRef = useRef<AbortController | null>(null)
     const baseInterval = 10000
-    const maxInterval = 30000
+    const maxInterval = 10000
     const intervalRef = useRef(baseInterval)
     const lastDataRef = useRef<DataType | null>(null)
     const lastSaveRef = useRef(0)

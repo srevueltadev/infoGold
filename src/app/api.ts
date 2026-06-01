@@ -37,24 +37,6 @@ const api = {
             signal?.removeEventListener('abort', onAbort);
         }
     },
-    goldPriceScraping: async (signal?: AbortSignal) => {
-        const result = { mid: 0 , image: null as string | null, time: ""};
-        try {
-            const response = await fetch('/api/getGoldApi', {
-                signal,
-                headers: getAuthHeaders()
-            });
-            const data = await response.json();
-            if (data.price) {
-                result.mid = data.price.replaceAll(',','');
-                result.time = data.date;
-            }
-            return result;
-        } catch (e) {
-            console.error(e);
-            return result;
-        }
-    },
     netData: async (signal?: AbortSignal) => {
         const result = { mid: 0, time: "",image:  null as string | null };
         try {

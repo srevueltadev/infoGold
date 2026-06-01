@@ -40,11 +40,8 @@ FROM base
 # Copy built application
 COPY --from=build /app /app
 
-RUN npx playwright install --with-deps
-
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
 
 # Comando para iniciar la aplicación
 CMD [ "npm", "run", "start" ]
-#CMD ["sh", "-c", "npx playwright install --with-deps && npm run start"]
