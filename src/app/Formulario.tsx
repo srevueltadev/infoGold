@@ -116,11 +116,12 @@ export default function Formulario() {
 
     const abortRef = useRef<AbortController | null>(null)
     const baseInterval = 10000
-    const maxInterval = 60000
+    const maxInterval = 30000
     const intervalRef = useRef(baseInterval)
     const lastDataRef = useRef<DataType | null>(null)
     const lastSaveRef = useRef(0)
     const nextExecutionRef = useRef(Date.now() + baseInterval)
+    const workingDataRef = useRef<DataType>(DataDefault)
 
     const saveIfChanged = (key: string, value: unknown, throttleMs = 2000) => {
         if (typeof window === 'undefined') return
@@ -135,48 +136,42 @@ export default function Formulario() {
 
 
     const init = useCallback(async () => {
-        const nowData = data
-        const [gold, banco, ext] = await Promise.all([
-            api.netData(),
-            api.bancodebogota(),
-            api.goldExternal(),
-        ])
-
-        nowData.gold = gold.mid
-        nowData.gold_date = gold.time
-        nowData.gold_time = new Date().toLocaleTimeString()
-
-        nowData.dolar_time = new Date().toLocaleTimeString()
-        nowData.dolar_date = banco.time
-        if (banco.image) {
+        const handleGold = async () => {
+            const gold = await api.netData()
+            if (!gold.mid) return
+            workingDataRef.current = { ...workingDataRef.current, gold: gold.mid, gold_date: gold.time, gold_time: new Date().toLocaleTimeString() }
+            calculos({ ...workingDataRef.current })
+            saveIfChanged('data', workingDataRef.current)
+        }
+        const handleBanco = async () => {
+            const banco = await api.bancodebogota()
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
-            setImage(banco.image.replace('..', ''))
-        } else {
-            setImage(null)
-        }
-        if (banco.mid === 0) {
-            if (typeof window !== "undefined") {
-                nowData.dolar = Number(localStorage.getItem('dolar') || defaultValue)
+            if (banco.image) setImage(banco.image.replace('..', ''))
+            else setImage(null)
+            const nowData = { ...workingDataRef.current, dolar_time: new Date().toLocaleTimeString(), dolar_date: banco.time }
+            if (banco.mid === 0) {
+                if (typeof window !== 'undefined') nowData.dolar = Number(localStorage.getItem('dolar') || defaultValue)
+                setIsError(true)
+            } else {
+                nowData.dolar = banco.mid
+                setIsError(false)
+                if (typeof window !== 'undefined') localStorage.setItem('dolar', String(banco.mid))
             }
-            setIsError(true)
-        } else {
-            nowData.dolar = banco.mid
-            setIsError(false)
-            if (typeof window !== "undefined") {
-                localStorage.setItem('dolar', String(banco.mid))
+            workingDataRef.current = nowData
+            calculos({ ...workingDataRef.current })
+            saveIfChanged('data', workingDataRef.current)
+        }
+        const handleExt = async () => {
+            const ext = await api.goldExternal()
+            if (ext.xauCop > 0 || ext.goldUsdOz > 0) {
+                const next = { xauCop: ext.xauCop, goldUsdOz: ext.goldUsdOz, fecha: ext.fecha }
+                setExtData(next)
+                saveIfChanged('extData', next)
             }
         }
-
-        if (ext.xauCop > 0 || ext.goldUsdOz > 0) {
-            const next = { xauCop: ext.xauCop, goldUsdOz: ext.goldUsdOz, fecha: ext.fecha }
-            setExtData(next)
-            saveIfChanged('extData', next)
-        }
-
-        saveIfChanged('data', nowData)
-        calculos(nowData)
-        // @ts-ignore
+        await Promise.allSettled([handleGold(), handleBanco(), handleExt()])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -188,48 +183,53 @@ export default function Formulario() {
             abortRef.current?.abort()
             const ctrl = new AbortController()
             abortRef.current = ctrl
-            try {
-                const before = JSON.stringify(lastDataRef.current)
-                const [gold, banco, ext] = await Promise.all([
-                    api.netData(ctrl.signal),
-                    api.bancodebogota(ctrl.signal),
-                    api.goldExternal(ctrl.signal),
-                ])
 
-                const nowData = {
-                    ...data,
-                    gold: gold.mid || data.gold,
-                    gold_date: gold.time,
-                    gold_time: new Date().toLocaleTimeString(),
-                    dolar: banco.mid || data.dolar,
-                    dolar_date: banco.time,
-                    dolar_time: new Date().toLocaleTimeString(),
-                } as DataType
+            let anyChanged = false
 
-                if (banco.image) {
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    // @ts-expect-error
-                    setImage(banco?.image.replace('..', ''))
+            const tryGold = async () => {
+                const gold = await api.netData(ctrl.signal)
+                if (!gold.mid) return
+                const nowData = { ...workingDataRef.current, gold: gold.mid, gold_date: gold.time, gold_time: new Date().toLocaleTimeString() }
+                if (workingDataRef.current.gold !== gold.mid) anyChanged = true
+                workingDataRef.current = nowData
+                lastDataRef.current = nowData
+                calculos(nowData)
+                saveIfChanged('data', nowData)
+            }
+
+            const tryBanco = async () => {
+                const banco = await api.bancodebogota(ctrl.signal)
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                if (banco.image) setImage(banco.image.replace('..', ''))
+                else setImage(null)
+                const nowData = { ...workingDataRef.current, dolar_time: new Date().toLocaleTimeString(), dolar_date: banco.time }
+                if (banco.mid === 0) {
+                    setIsError(true)
                 } else {
-                    setImage(null)
+                    if (workingDataRef.current.dolar !== banco.mid) anyChanged = true
+                    nowData.dolar = banco.mid
+                    setIsError(false)
+                    if (typeof window !== 'undefined') localStorage.setItem('dolar', String(banco.mid))
                 }
+                workingDataRef.current = nowData
+                lastDataRef.current = nowData
+                calculos(nowData)
+                saveIfChanged('data', nowData)
+            }
 
+            const tryExt = async () => {
+                const ext = await api.goldExternal(ctrl.signal)
                 if (ext.xauCop > 0 || ext.goldUsdOz > 0) {
                     const next = { xauCop: ext.xauCop, goldUsdOz: ext.goldUsdOz, fecha: ext.fecha }
                     setExtData(next)
                     saveIfChanged('extData', next)
                 }
+            }
 
-                const after = JSON.stringify(nowData)
-                const changed = before !== after
-                if (changed) {
-                    lastDataRef.current = nowData
-                    saveIfChanged('data', nowData)
-                    calculos(nowData)
-                    intervalRef.current = baseInterval
-                } else {
-                    intervalRef.current = Math.min(maxInterval, intervalRef.current * 2)
-                }
+            try {
+                await Promise.allSettled([tryGold(), tryBanco(), tryExt()])
+                intervalRef.current = anyChanged ? baseInterval : Math.min(maxInterval, intervalRef.current * 2)
             } catch (e) {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error

@@ -14,7 +14,7 @@ interface ExternalCache {
 }
 
 let cache: ExternalCache | null = null;
-const TTL = 60_000;
+const TTL = 15_000;
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {

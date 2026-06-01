@@ -3,7 +3,7 @@ import { withPage } from '@/lib/playwright';
 import { withAuth } from './middleware';
 
 let cache: { price: string | null; date: string | null; ts: number } | null = null;
-const TTL = 60_000;
+const TTL = 30_000;
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {

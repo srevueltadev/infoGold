@@ -6,7 +6,7 @@ import { withAuth } from './middleware';
 const INFOGOLD_URL = 'https://info-gold.fly.dev/api/getNetData';
 
 let cache: { value: string | null; fecha: string | null; ts: number } | null = null;
-const TTL = 60_000;
+const TTL = 15_000;
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
