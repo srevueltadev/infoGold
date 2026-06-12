@@ -1,15 +1,9 @@
+// Consulta directa al backend central desde el navegador (sin pasar por
+// pages/api): menos saltos y la app sigue viva aunque el server Next esté frío.
+const GOLD_API = process.env.NEXT_PUBLIC_GOLD_API_URL ?? 'https://gold-data-api.fly.dev';
+const GOLD_API_KEY = process.env.NEXT_PUBLIC_GOLD_API_KEY ?? 'santi.dev';
 
-function getAuthToken(): string | null {
-    if (typeof window !== 'undefined') {
-        return localStorage.getItem('authToken');
-    }
-    return null;
-}
-
-function getAuthHeaders(): HeadersInit {
-    const token = getAuthToken();
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
+const apiHeaders = { 'x-api-key': GOLD_API_KEY };
 
 const api = {
     bancodebogota: async (signal?: AbortSignal) => {
@@ -19,16 +13,18 @@ const api = {
         const onAbort = () => controller.abort();
         signal?.addEventListener('abort', onAbort, { once: true });
         try {
-            const response = await fetch('/api/getUsd', {
+            const response = await fetch(`${GOLD_API}/api/usd`, {
                 signal: controller.signal,
-                headers: getAuthHeaders()
+                headers: apiHeaders,
             });
             const data = await response.json();
-            if (data.usd) {
+            if (typeof data.value === 'number' && data.value > 0) {
+                result.mid = data.value;
+            } else if (data.usd?.[0]) {
                 result.mid = Number(data.usd[0].split(':')[1].trim().replaceAll(',','.'))
-                result.image = data?.image || null
-                result.time = data?.fecha || ""
             }
+            result.image = data?.image || null
+            result.time = data?.fecha || ""
             return result
         } catch {
             return result
@@ -40,13 +36,13 @@ const api = {
     netData: async (signal?: AbortSignal) => {
         const result = { mid: 0, time: "",image:  null as string | null };
         try {
-            const response = await fetch('/api/getNetData', {
+            const response = await fetch(`${GOLD_API}/api/netdania`, {
                 signal,
-                headers: getAuthHeaders()
+                headers: apiHeaders,
             });
             const data = await response.json();
             if (data.value) {
-                result.mid = Number(data.value.replaceAll(',', ''));
+                result.mid = Number(String(data.value).replaceAll(',', ''));
                 result.time = data.fecha || "";
             }
             return result;
@@ -58,9 +54,9 @@ const api = {
     goldExternal: async (signal?: AbortSignal) => {
         const result = { xauCop: 0, goldUsdOz: 0, fecha: "" };
         try {
-            const response = await fetch('/api/getGoldExternal', {
+            const response = await fetch(`${GOLD_API}/api/gold`, {
                 signal,
-                headers: getAuthHeaders()
+                headers: apiHeaders,
             });
             const data = await response.json();
             result.xauCop = data.xauCop ? Number(data.xauCop) : 0;
