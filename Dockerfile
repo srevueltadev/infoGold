@@ -4,8 +4,6 @@
 ARG NODE_VERSION=20.12.0
 FROM node:${NODE_VERSION}-slim as base
 
-LABEL fly_launch_runtime="Next.js"
-
 # Next.js app lives here
 WORKDIR /app
 
@@ -16,10 +14,6 @@ ENV NODE_ENV="production"
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
-
 # Install node modules
 COPY package-lock.json package.json ./
 RUN npm ci --include=dev
@@ -28,13 +22,13 @@ RUN npm ci --include=dev
 COPY . .
 
 # Public API endpoint baked at build time (overridable via build-arg)
-ARG NEXT_PUBLIC_GOLD_API_URL=https://gold-data-api.fly.dev
+ARG NEXT_PUBLIC_GOLD_API_URL=https://gold-api.santirev.com
 ARG NEXT_PUBLIC_GOLD_API_KEY=santi.dev
 ENV NEXT_PUBLIC_GOLD_API_URL=$NEXT_PUBLIC_GOLD_API_URL
 ENV NEXT_PUBLIC_GOLD_API_KEY=$NEXT_PUBLIC_GOLD_API_KEY
 
-# Build application
-RUN npm run build
+# Build application (drop Next build cache to slim the image)
+RUN npm run build && rm -rf .next/cache
 
 # Remove development dependencies
 RUN npm prune --omit=dev
