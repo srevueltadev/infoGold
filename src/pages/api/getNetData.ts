@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuth } from './middleware';
 
-const NETDANIA_URL = 'https://gold-data-api.fly.dev/api/netdania';
+const NETDANIA_URL = 'https://gold-api.santirev.com/api/netdania';
 const GOLD_API_KEY = process.env.GOLD_DATA_API_KEY ?? 'santi.dev';
 
 let cache: { value: string | null; fecha: string | null; ts: number } | null = null;

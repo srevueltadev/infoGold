@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuth } from './middleware';
 
-const USD_API_URL = 'https://gold-data-api.fly.dev/api/usd';
+const USD_API_URL = 'https://gold-api.santirev.com/api/usd';
 const GOLD_API_KEY = process.env.GOLD_DATA_API_KEY ?? 'santi.dev';
 
 let cache: { usd: string[]; image: string | null; fecha: string | null; ts: number } | null = null;

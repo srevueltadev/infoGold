@@ -1,3 +1,7 @@
+> [!note] Cerebro (Obsidian)
+> Antes de trabajar, lee la nota viva de este proyecto: `/Users/santirev/Proyect/obsidian/Proyectos/Golds.md`
+> (stack, arquitectura, comandos, endpoints, deploy). Índice del workspace: `/Users/santirev/Proyect/obsidian/🧠 Cerebro.md`.
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -44,4 +48,4 @@ Custom token auth: HMAC-SHA256 signed base64 tokens, 24-hour expiry, stored in `
 `Formulario.tsx` persists `data` (gold/dolar values) and `dataForm` (computed price table) to `localStorage` to survive refreshes. All writes are throttled (2s) and only fire when values change.
 
 ### Deployment
-Deployed to **Fly.io** (`info-gold` app, `iad` region) as a Docker container. The Dockerfile installs Playwright browsers (`npx playwright install --with-deps`) at image build time — this is required for the scraping API routes to work. The VM is configured with 3 GB RAM / 2 CPUs to handle headless Chromium.
+Deployed to VPS `31.97.146.100` as a Docker container via `registry.revpos.app/info-gold`. Run `../deploy-infogold.sh` from workspace root. The Dockerfile installs Playwright browsers (`npx playwright install --with-deps`) at image build time — required for the scraping API routes. The VPS is configured with 3 GB RAM / 2 CPUs to handle headless Chromium.

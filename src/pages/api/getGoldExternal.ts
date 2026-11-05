@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { withAuth } from './middleware';
 
-const GOLD_API_URL = 'https://gold-data-api.fly.dev/api/gold';
+const GOLD_API_URL = 'https://gold-api.santirev.com/api/gold';
 const GOLD_API_KEY = process.env.GOLD_DATA_API_KEY ?? 'santi.dev';
 
 interface GoldCache {
